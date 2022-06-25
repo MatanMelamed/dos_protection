@@ -1,4 +1,4 @@
-package com.ermetic.dosserver.services;
+package com.ermetic.dosserver.services.local_dos_protection;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -39,5 +39,13 @@ public class ClientTimeFrame {
 
     public Integer getRequestsCount() {
         return requestsCount;
+    }
+
+    @Override
+    public String toString() {
+        return "ClientTimeFrame{" +
+                "startTime=" + startTime +
+                ", requestsCount=" + requestsCount +
+                '}';
     }
 }

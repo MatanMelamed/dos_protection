@@ -1,8 +1,9 @@
 package com.ermetic.dosserver.config;
 
-import org.springframework.context.annotation.Configuration;
+import lombok.Data;
 
-@Configuration
+@Data
 public class DosServerConfig {
-
+    public int timeFrameDurationMS;
+    public int timeFrameMaxRequest;
 }

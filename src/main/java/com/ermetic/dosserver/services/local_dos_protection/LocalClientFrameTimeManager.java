@@ -1,8 +1,9 @@
-package com.ermetic.dosserver.services.time_frame_managers;
+package com.ermetic.dosserver.services.local_dos_protection;
 
-import com.ermetic.dosserver.services.ClientTimeFrame;
-import com.ermetic.dosserver.services.IClientFrameTimeManager;
+import com.ermetic.dosserver.config.DosServerConfig;
 import com.ermetic.dosserver.sync.ClientIdSyncExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
@@ -15,19 +16,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Service
-public class LocalCacheClientFrameTimeManager implements IClientFrameTimeManager {
+public class LocalClientFrameTimeManager implements IClientFrameTimeManager {
+    private static final Logger logger = LoggerFactory.getLogger(LocalClientFrameTimeManager.class);
 
     @Autowired
     private ClientIdSyncExecutor clientIdSyncExecutor;
 
-    private final Map<Integer, ClientTimeFrame> timeFrameMap;
+    @Autowired
+    private DosServerConfig serverConfig;
+
+    private final Map<Integer, ClientTimeFrame> timeFrameMap = new ConcurrentHashMap<>();
     private final TaskScheduler cleanupScheduler;
 
-    int timeFrameDurationMS = 5000;
-
-    public LocalCacheClientFrameTimeManager() {
-        this.timeFrameMap = new ConcurrentHashMap<>();
-
+    public LocalClientFrameTimeManager() {
         ScheduledExecutorService localExecutor = Executors.newSingleThreadScheduledExecutor();
         cleanupScheduler = new ConcurrentTaskScheduler(localExecutor);
     }
@@ -43,7 +44,7 @@ public class LocalCacheClientFrameTimeManager implements IClientFrameTimeManager
         timeFrameMap.put(clientId, newTimeFrame);
 
         // register cleanup task
-        Instant cleanUpAtTime = newTimeFrame.getStartTime().plusMillis(timeFrameDurationMS);
+        Instant cleanUpAtTime = newTimeFrame.getStartTime().plusMillis(serverConfig.getTimeFrameDurationMS());
         cleanupScheduler.schedule(new CleanupTask(clientId, newTimeFrame), cleanUpAtTime);
     }
 
@@ -68,12 +69,13 @@ public class LocalCacheClientFrameTimeManager implements IClientFrameTimeManager
         public void run() {
             clientIdSyncExecutor.execute(clientId, () -> {
                 ClientTimeFrame timeFrameInCache = timeFrameMap.get(clientId);
-                /**
-                 * Removing only if time frame in cache is the same time frame and not a new one.
-                 * For edge cases like - on frame end time, before the cleanup is starts,
-                 * cache is updated with new frame for the same client id. cleanup should not remove it then.
+                /*
+                  Removing only if time frame in cache is the same time frame and not a new one.
+                  For edge cases like - on frame end time, before the cleanup is starts,
+                  cache is updated with new frame for the same client id. cleanup should not remove it then.
                  */
                 if (timeFrameInCache.equals(clientTimeFrame)) {
+                    logger.debug("Removing client {} time frame", clientId);
                     timeFrameMap.remove(clientId);
                 }
             });

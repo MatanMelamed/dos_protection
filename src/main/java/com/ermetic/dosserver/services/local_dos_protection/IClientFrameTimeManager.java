@@ -1,4 +1,4 @@
-package com.ermetic.dosserver.services;
+package com.ermetic.dosserver.services.local_dos_protection;
 
 public interface IClientFrameTimeManager {
     ClientTimeFrame getClientTimeFrame(int clientId);

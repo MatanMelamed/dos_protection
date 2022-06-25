@@ -1,5 +1,7 @@
-package com.ermetic.dosserver.services;
+package com.ermetic.dosserver.services.local_dos_protection;
 
+import com.ermetic.dosserver.config.DosServerConfig;
+import com.ermetic.dosserver.services.IDosProtectionService;
 import com.ermetic.dosserver.sync.ClientIdSyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +11,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 
 @Service
-public class DosProtectionService implements IDosProtectionService {
-    private static final Logger logger = LoggerFactory.getLogger(DosProtectionService.class);
+public class LocalDosProtectionService implements IDosProtectionService {
+    private static final Logger logger = LoggerFactory.getLogger(LocalDosProtectionService.class);
 
     @Autowired
     private ClientIdSyncExecutor syncExecutor;
@@ -18,12 +20,12 @@ public class DosProtectionService implements IDosProtectionService {
     @Autowired
     private IClientFrameTimeManager frameTimeManager;
 
-    int requestCountThreshold = 5;
-    int clientTimeFrameDurationInMS = 5000;
+    @Autowired
+    private DosServerConfig serverConfig;
 
     @Override
     public boolean isClientReachedMaxRequest(int clientId) {
-        // sync method execution on client ID between threads
+        // run method as synchronized block on client id
         return syncExecutor.evaluate(clientId, () -> this.isClientReachMaxRequestInternal(clientId));
     }
 
@@ -34,19 +36,25 @@ public class DosProtectionService implements IDosProtectionService {
         logger.info("Processing request for client {} with time frame {}", clientId, clientTimeFrame);
 
         if (clientTimeFrame != null && isTimeFrameStillOpen(clientTimeFrame)) {
-            logger.info("Time frame is open for client {}", clientId);
+            logger.debug("Time frame is open for client {}", clientId);
             if (!isTimeFrameRequestCountReached(clientTimeFrame)) {
-                logger.info("Time frame did not reach max count");
+                logger.debug("Time frame did not reach max count");
                 ClientTimeFrame updatedTimeFrame = clientTimeFrame.increaseCounter();
                 frameTimeManager.updateClientTimeFrame(clientId, updatedTimeFrame);
                 result = false;
             } else {
-                logger.info("Time frame reached max count");
+                logger.debug("Time frame reached max count");
             }
         } else {
-            logger.info("No time frame is open for client {}, creating a new one", clientId);
+            logger.debug("No time frame is open for client {}, creating a new one", clientId);
             frameTimeManager.createClientTimeFrame(clientId);
             result = false;
+        }
+
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
         logger.info("Processing request for client {} finished with {}", clientId, result);
@@ -54,11 +62,11 @@ public class DosProtectionService implements IDosProtectionService {
     }
 
     private boolean isTimeFrameStillOpen(ClientTimeFrame timeFrame) {
-        Instant timeFrameEndTime = timeFrame.getStartTime().plusMillis(clientTimeFrameDurationInMS);
+        Instant timeFrameEndTime = timeFrame.getStartTime().plusMillis(serverConfig.getTimeFrameDurationMS());
         return timeFrameEndTime.isAfter(Instant.now());
     }
 
     private boolean isTimeFrameRequestCountReached(ClientTimeFrame timeFrame) {
-        return timeFrame.getRequestsCount() >= requestCountThreshold;
+        return timeFrame.getRequestsCount() >= serverConfig.getTimeFrameMaxRequest();
     }
 }
