@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 
 @Service
-public class LocalDosProtectionService implements IDosProtectionService {
-    private static final Logger logger = LoggerFactory.getLogger(LocalDosProtectionService.class);
+public class DosProtectionService implements IDosProtectionService {
+    private static final Logger logger = LoggerFactory.getLogger(DosProtectionService.class);
 
     @Autowired
     private ISyncService syncService;
