@@ -16,7 +16,7 @@ public class InputListener implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        System.out.println("Enter any key to stop server (char + enter)");
+        System.out.println("Press Enter to stop server");
         new Scanner(System.in).nextLine();
         context.close();
     }
