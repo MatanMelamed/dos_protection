@@ -1,4 +1,4 @@
-package com.ermetic.dosserver.services.local_dos_protection;
+package com.ermetic.dosserver.services.time_frame;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -7,24 +7,24 @@ import java.util.Objects;
 /**
  * Immutable object representing a time frame
  */
-public class ClientTimeFrame {
+public class TimeFrame {
     private final Instant startTime;
     private final Integer requestsCount;
 
-    public ClientTimeFrame(Instant startTime, Integer requestsCount) {
+    public TimeFrame(Instant startTime, Integer requestsCount) {
         this.startTime = startTime;
         this.requestsCount = requestsCount;
     }
 
-    public ClientTimeFrame increaseCounter() {
-        return new ClientTimeFrame(startTime, requestsCount + 1);
+    public TimeFrame increaseCounter() {
+        return new TimeFrame(startTime, requestsCount + 1);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ClientTimeFrame timeFrame = (ClientTimeFrame) o;
+        TimeFrame timeFrame = (TimeFrame) o;
         return startTime.equals(timeFrame.startTime);
     }
 

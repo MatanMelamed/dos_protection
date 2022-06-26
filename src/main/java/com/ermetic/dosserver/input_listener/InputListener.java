@@ -9,16 +9,15 @@ import java.util.Scanner;
 
 @Component
 public class InputListener implements CommandLineRunner {
-
+    
     @Autowired
     private ConfigurableApplicationContext context;
 
 
     @Override
-    public void run(String... args) throws Exception {
-        Scanner scanner = new Scanner(System.in);
+    public void run(String... args) {
         System.out.println("Enter any key to stop server (char + enter)");
-        scanner.next();
+        new Scanner(System.in).nextLine();
         context.close();
     }
 }
